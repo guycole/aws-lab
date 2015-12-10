@@ -1,0 +1,16 @@
+#
+curlCommand: /usr/bin/curl -L -s
+#
+#dumpCommand: /usr/local/mysql/bin/mysqldump
+dumpCommand: /usr/bin/mysqldump
+#
+#gzipCommand: /opt/local/bin/gzip
+gzipCommand: /bin/gzip
+#
+#tarCommand: /usr/bin/tar
+tarCommand: /bin/tar
+#
+awsRegion: bogus
+awsAccessKey: bogus
+awsSecretKey: bogus
+#

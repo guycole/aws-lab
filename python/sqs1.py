@@ -1,7 +1,7 @@
 #! /usr/bin/python
 #
 # Title: sqs1.py
-# Description:
+# Description: read/write SQS demo
 # Development Environment: OS X 10.10.5/Python 2.7.7
 # Author: G.S. Cole (guycole at gmail dot com)
 #

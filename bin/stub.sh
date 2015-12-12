@@ -9,5 +9,5 @@ PATH=/bin:/usr/bin:/etc:/usr/local/bin; export PATH
 #
 PYTHONPATH=/Users/gsc/PycharmProjects/aws-lab; export PYTHONPATH
 #
-/Users/gsc/PycharmProjects/aws-lab/bin/stub.py /var/aws/lab/config.yaml
+/Users/gsc/PycharmProjects/aws-lab/python/stub.py /var/aws/lab/config.yaml
 #

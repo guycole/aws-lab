@@ -7,7 +7,9 @@
 #
 PATH=/bin:/usr/bin:/etc:/usr/local/bin; export PATH
 #
-PYTHONPATH=/Users/gsc/PycharmProjects/aws-lab; export PYTHONPATH
+#PYTHONPATH=/Users/gsc/PycharmProjects/aws-lab; export PYTHONPATH
+PYTHONPATH=/home/gsc/git/aws-lab; export PYTHONPATH
 #
-/Users/gsc/PycharmProjects/aws-lab/python/ses.py /var/aws/lab/config.yaml
+#/Users/gsc/PycharmProjects/aws-lab/python/ses.py /var/aws/lab/config.yaml
+/home/gsc/git/aws-lab/python/ses.py /var/aws/lab/config.yaml
 #

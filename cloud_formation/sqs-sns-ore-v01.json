@@ -1,0 +1,111 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"sqs-sns-ore-v01.json",
+
+  "Resources": {
+    "AlarmMailTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "DisplayName": "jaded-alarm",
+        "Subscription": [{
+          "Endpoint": "admin@shastrax.com",
+          "Protocol":"email"
+        }],
+        "TopicName": "jaded-alarm"
+      }
+    },
+
+    "DeadQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 262144,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "jaded-dlq",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "DrifterOreQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0, 
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "jaded-drifter-ore",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt":["DeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        }, 
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "DrifterNvaQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "jaded-drifter-nva",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt":["DeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        },
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "RangerOreQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "jaded-ranger-ore",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt":["DeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        },
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "RangerNvaQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "jaded-ranger-nva",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt":["DeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        },
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "LogQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0, 
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "jaded-log",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt":["DeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        }, 
+        "VisibilityTimeout": 2
+      }
+    }
+  }
+}

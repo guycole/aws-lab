@@ -10,7 +10,7 @@ gzipCommand: /bin/gzip
 #tarCommand: /usr/bin/tar
 tarCommand: /bin/tar
 #
-awsRegion: bogus
-awsAccessKey: bogus
-awsSecretKey: bogus
+awsRegion: us-west-2
+awsAccessKey: AKIAJDNIDTYMU5PAPJYQ
+awsSecretKey: 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
 #

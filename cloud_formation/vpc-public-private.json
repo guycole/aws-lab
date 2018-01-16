@@ -11,12 +11,6 @@
       "ConstraintDescription":"existing EC2 KeyPair"
     },
 
-    "Region": {
-      "Description": "AWS Region",
-      "Type": "String",
-      "Default": "us-west-2"
-    },
-
     "PrivateAvailZone": {
       "Description": "Private Availability Zone",
       "Type": "String",
@@ -324,7 +318,7 @@
         "KeyName":{"Ref":"KeyName"},
         "NetworkInterfaces":[{
           "GroupSet":[{"Ref":"DbSecurityGroup"}],
-          "AssociatePublicIpAddress":"true",
+          "AssociatePublicIpAddress":"false",
           "DeviceIndex":"0",
           "DeleteOnTermination":"true",
           "SubnetId":{"Ref":"PrivateSubnet"}

@@ -11,6 +11,6 @@ gzipCommand: /bin/gzip
 tarCommand: /bin/tar
 #
 awsRegion: us-west-2
-awsAccessKey: AKIAJDNIDTYMU5PAPJYQ
-awsSecretKey: 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
+awsAccessKey: bogus
+awsSecretKey: bogus
 #

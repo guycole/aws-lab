@@ -1,0 +1,111 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"vpc-master-v01.json",
+
+  "Parameters": {
+    "AlarmTopic": {
+      "Description": "Alarm Topic",
+      "Type": "String",
+      "MinLength": "30",
+      "Default": "arn:aws:sns:us-west-2:238461155224:alert-topic"
+    },
+
+    "BastionImageId":{
+      "Description":"Bastion AMI Image Id",
+      "Type":"String",
+      "MinLength": "12",
+      "Default":"ami-049f8ff3ea4d81c27",
+      "AllowedPattern":"ami-[a-f0-9]*"
+    },
+
+    "BastionKeyName":{
+      "Description":"Bastion EC2 KeyPair",
+      "Type":"AWS::EC2::KeyPair::KeyName",
+      "Default":"bastion-ore",
+      "ConstraintDescription":"existing EC2 KeyPair"
+    },
+
+    "DataBaseImageId":{
+      "Description":"DataBase AMI Image Id",
+      "Type":"String",
+      "MinLength": "12",
+      "Default":"ami-00c69531b54d1b75f",
+      "AllowedPattern":"ami-[a-f0-9]*"
+    },
+
+    "DataBaseKeyName":{
+      "Description":"DataBase EC2 KeyPair",
+      "Type":"AWS::EC2::KeyPair::KeyName",
+      "Default":"database-ore",
+      "ConstraintDescription":"existing EC2 KeyPair"
+    },
+
+    "PrivateAvailZone": {
+      "Description": "Private Availability Zone",
+      "Type": "String",
+      "MinLength": "9",
+      "Default": "us-west-2b"
+    },
+
+    "PublicAvailZone": {
+      "Description": "Public Availability Zone",
+      "Type": "String",
+      "MinLength": "9",
+      "Default": "us-west-2c"
+    }
+  },
+
+  "Resources": {
+    "VpcStack":{
+      "Type":"AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL":"https://s3.amazonaws.com/cfn.braingang.net/vpc1/vpc-vpc-v01.json",
+        "Parameters": {
+          "PrivateAvailZone":{"Ref":"PrivateAvailZone"},
+          "PublicAvailZone":{"Ref":"PublicAvailZone"}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    },
+
+    "BastionStack":{
+      "Type":"AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL":"https://s3.amazonaws.com/cfn.braingang.net/vpc1/vpc-bastion-v01.json",
+        "Parameters": {
+          "AlarmTopic":{"Ref":"AlarmTopic"},
+          "KeyName":{"Ref":"BastionKeyName"},
+          "ImageId":{"Ref":"BastionImageId"},
+          "VpcId":{"Fn::GetAtt":["VpcStack", "Outputs.VpcId"]},
+          "PublicAvailZone":{"Ref":"PublicAvailZone"},
+          "PublicSubnetId":{"Fn::GetAtt":["VpcStack", "Outputs.PublicSubnetId"]}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    },
+
+    "DataBaseStack":{
+      "Type":"AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL":"https://s3.amazonaws.com/cfn.braingang.net/vpc1/vpc-database-v01.json",
+        "Parameters": {
+          "AlarmTopic":{"Ref":"AlarmTopic"},
+          "KeyName":{"Ref":"DataBaseKeyName"},
+          "ImageId":{"Ref":"DataBaseImageId"},
+          "VpcId":{"Fn::GetAtt":["VpcStack", "Outputs.VpcId"]},
+          "PrivateAvailZone":{"Ref":"PrivateAvailZone"},
+          "PrivateSubnetId":{"Fn::GetAtt":["VpcStack", "Outputs.PrivateSubnetId"]},
+          "PublicCIDR":{"Fn::GetAtt":["VpcStack", "Outputs.PublicCIDR"]}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    }
+  }
+}

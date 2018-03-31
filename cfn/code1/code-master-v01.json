@@ -1,0 +1,38 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"code-master-v01.json",
+
+  "Parameters": {
+    "RepositoryName": {
+      "Description": "Repository Name",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "RepositoryName2"
+    },
+
+    "RepositoryDescription": {
+      "Description": "Repository Description",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "Repository Description 2"
+    }
+  },
+
+  "Resources": {
+
+    "Pipeline":{
+      "Type":"AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL":"https://s3.amazonaws.com/cfn.braingang.net/code1/code-pipeline-v01.json",
+        "Parameters": {
+          "RepositoryName":{"Ref":"RepositoryName"},
+          "RepositoryDescription":{"Ref":"RepositoryDescription"}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,273 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "vpc-database-v01.json",
+
+  "Parameters": {
+    "AlarmTopic": {
+      "Description": "Alarm Topic",
+      "Type": "String",
+      "MinLength": "30"
+    },
+
+    "EnvironmentType": {
+      "Description": "Target Environment",
+      "Type": "String",
+      "AllowedValues": ["production", "development", "test"],
+      "ConstraintDescription": "must be production, development or test"
+    },
+
+    "KeyName": {
+      "Description": "EC2 KeyPair",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "existing EC2 KeyPair"
+    },
+
+    "ImageId": {
+      "Description": "Bastion AMI Image Id",
+      "Type": "String",
+      "MinLength": "12",
+      "AllowedPattern": "ami-[a-f0-9]*"
+    },
+
+    "VpcId": {
+      "Description": "Vpc ID",
+      "Type": "String",
+      "MinLength": "12",
+      "AllowedPattern": "vpc-[a-f0-9]*"
+    },
+
+    "PrivateAvailZone": {
+      "Description": "Private Availability Zone",
+      "Type": "String",
+      "MinLength": "9"
+    },
+
+    "PrivateSubnetId": {
+      "Description": "Private Subnet ID",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+
+    "PublicCIDR": {
+      "Description": "Public CIDR",
+      "Type": "String",
+      "MinLength": "7"
+    }
+  },
+
+  "Conditions": {
+    "DevelopmentResources": {"Fn::Equals": [{"Ref": "EnvironmentType"}, "development"]},
+    "ProductionResources": {"Fn::Equals": [{"Ref": "EnvironmentType"}, "production"]},
+    "TestResources": {"Fn::Equals": [{"Ref": "EnvironmentType"}, "test"]}
+  },
+
+  "Resources": {
+    "DataBaseEC2Profile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [{"Ref": "DataBaseEC2Role"}]
+      }
+    },
+
+    "DataBaseEC2Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ 
+            "Action": ["sts:AssumeRole"],
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["ec2.amazonaws.com"]
+            }
+          }]
+        },
+        "Path": "/"
+      }
+    },
+
+    "DataBaseEC2Policy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "DataBaseEC2Policy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Action":["s3:*", "ses:*", "cloudwatch:*"],
+            "Resource": "*"
+          }]
+        },
+        "Roles": [{"Ref": "DataBaseEC2Role"}]
+      }
+    },
+
+    "DataBaseEC2PolicyCodeCommit": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "DataBaseEC2PolicyCodeCommit",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "codecommit:BatchGet*",
+                "codecommit:Get*",
+                "codecommit:List*",
+                "codecommit:Create*",
+                "codecommit:DeleteBranch",
+                "codecommit:Describe*",
+                "codecommit:Put*",
+                "codecommit:Post*",
+                "codecommit:Merge*",
+                "codecommit:Test*",
+                "codecommit:Update*",
+                "codecommit:GitPull",
+                "codecommit:GitPush"
+              ],
+              "Resource":"*"
+            }, {
+              "Sid": "CloudWatchEventsCodeCommitRulesAccess",
+              "Effect": "Allow",
+              "Action": [
+                "events:DeleteRule",
+                "events:DescribeRule",
+                "events:DisableRule",
+                "events:EnableRule",
+                "events:PutRule",
+                "events:PutTargets",
+                "events:RemoveTargets",
+                "events:ListTargetsByRule"
+              ],
+              "Resource": "arn:aws:events:*:*:rule/codecommit*"
+            }, {
+              "Sid": "SNSTopicAndSubscriptionAccess",
+              "Effect": "Allow",
+              "Action": [
+                "sns:Subscribe",
+                "sns:Unsubscribe"
+              ],
+              "Resource": "arn:aws:sns:*:*:codecommit*"
+            }, {
+              "Sid": "SNSTopicAndSubscriptionReadAccess",
+              "Effect": "Allow",
+              "Action": [
+                "sns:ListTopics",
+                "sns:ListSubscriptionsByTopic",
+                "sns:GetTopicAttributes"
+              ],
+              "Resource": "*"
+            }, {
+              "Sid": "LambdaReadOnlyListAccess",
+              "Effect": "Allow",
+              "Action": [ "lambda:ListFunctions" ],
+              "Resource": "*"
+            }, {
+              "Sid": "IAMReadOnlyListAccess",
+              "Effect": "Allow",
+              "Action": [ "iam:ListUsers" ],
+              "Resource": "*"
+            }, {
+              "Sid": "IAMReadOnlyConsoleAccess",
+              "Effect": "Allow",
+              "Action": [
+                "iam:ListAccessKeys",
+                "iam:ListSSHPublicKeys",
+                "iam:ListServiceSpecificCredentials",
+                "iam:ListAccessKeys",
+                "iam:GetSSHPublicKey"
+              ],
+              "Resource": "arn:aws:iam::*:user/${aws:username}"
+            }, {
+              "Sid": "IAMUserSSHKeys",
+              "Effect": "Allow",
+              "Action": [
+                "iam:DeleteSSHPublicKey",
+                "iam:GetSSHPublicKey",
+                "iam:ListSSHPublicKeys",
+                "iam:UpdateSSHPublicKey",
+                "iam:UploadSSHPublicKey"
+              ],
+              "Resource": "arn:aws:iam::*:user/${aws:username}"
+            }, {
+              "Sid": "IAMSelfManageServiceSpecificCredentials",
+              "Effect": "Allow",
+              "Action": [
+                "iam:CreateServiceSpecificCredential",
+                "iam:UpdateServiceSpecificCredential",
+                "iam:DeleteServiceSpecificCredential",
+                "iam:ResetServiceSpecificCredential"
+              ],
+              "Resource": "arn:aws:iam::*:user/${aws:username}"
+            }
+          ]
+        },
+        "Roles": [{"Ref":"DataBaseEC2Role"}]
+      }
+    },
+
+    "DataBaseSecurityGroup":{
+      "Type":"AWS::EC2::SecurityGroup",
+      "Properties":{
+        "GroupDescription":"DataBase Security Group",
+        "VpcId":{"Ref":"VpcId"},
+        "SecurityGroupIngress":[
+          {"IpProtocol":"tcp", "FromPort":"22", "ToPort":"22", "CidrIp":{"Ref":"PublicCIDR"}}, 
+          {"IpProtocol":"tcp", "FromPort":"3306", "ToPort":"3306", "CidrIp":{"Ref":"PublicCIDR"}}, 
+          {"IpProtocol":"tcp", "FromPort":"443", "ToPort":"443", "CidrIp":{"Ref":"PublicCIDR"}}, 
+          {"IpProtocol":"tcp", "FromPort":"80", "ToPort":"80", "CidrIp":{"Ref":"PublicCIDR"}}
+        ]
+      }
+    },
+
+    "DataBase": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": {"Ref": "PrivateAvailZone"},
+        "IamInstanceProfile": {"Ref": "DataBaseEC2Profile"},
+        "ImageId": {"Ref": "ImageId"},
+        "InstanceType": "m5.large",
+        "KeyName": {"Ref": "KeyName"},
+        "BlockDeviceMappings": {
+          "Fn::If": ["DevelopmentResources", {
+            {"Ebs": {"DeviceName": "/dev/sdj", "VolumeSize": "11", "VolumeType": "gp2"}},
+            {"Ebs": {"DeviceName": "/dev/sdk", "VolumeSize": "11", "VolumeType": "gp2"}}
+          }, {
+            {"Ebs": {"DeviceName": "/dev/sdj", "VolumeSize": "33", "VolumeType": "gp2"}},
+            {"Ebs": {"DeviceName": "/dev/sdk", "VolumeSize": "33", "VolumeType": "gp2"}}
+          }]
+        },
+        "NetworkInterfaces":[{
+          "GroupSet":[{"Ref":"DataBaseSecurityGroup"}],
+          "AssociatePublicIpAddress":"false",
+          "DeviceIndex":"0",
+          "DeleteOnTermination":"true",
+          "SubnetId":{"Ref":"PrivateSubnetId"}
+        }],
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}},
+          {"Key":"Network", "Value":"Private"},
+          {"Key":"Server", "Value":"DataBase"}
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": ["", [
+              "#!/bin/bash\n",
+              "yum -y update && yum -y upgrade\n"
+              "/root/create-raid.sh\n"
+            ]]
+          }
+        }
+      }
+    }
+  },
+
+  "Outputs":{
+    "DataBase":{
+      "Description":"DataBase",
+      "Value":{"Ref":"DataBase"}
+    }
+  }
+}

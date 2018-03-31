@@ -1,0 +1,43 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"sqs-s3-v01.son",
+
+  "Parameters": {
+    "VocalSeagullQueueArn": {
+      "Description": "Vocal Seagull Queue",
+      "Type": "String",
+      "MinLength": "15"
+    }
+  },
+
+  "Resources": {
+    "VocalBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "AccessControl": "Private",
+        "BucketName":"vocal.braingang.net",
+        "LifecycleConfiguration": {
+          "Rules": [{
+            "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": 2},
+            "Id": "VocalGlacierRule",
+            "Status": "Enabled",
+            "Transitions": [{"TransitionInDays":"1", "StorageClass":"Glacier"}]
+          }]
+        },
+        "NotificationConfiguration": {
+          "QueueConfigurations": [{"Event": "s3:ObjectCreated:*", "Queue": {"Ref": "VocalSeagullQueueArn"}}]
+        },
+        "VersioningConfiguration": {"Status": "Suspended"}
+      }
+    }
+  },
+
+  "Outputs":{
+    "VocalBucketId":{
+      "Description":"Vocal Bucket",
+      "Value":{"Ref":"VocalBucket"}
+    }
+  }
+}

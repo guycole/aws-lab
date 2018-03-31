@@ -1,0 +1,85 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "code-sqns-v01.son",
+
+  "Resources": {
+    "RepositoryTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "DisplayName": "repository-topic",
+        "Subscription": [{
+          "Endpoint": "guycole@gmail.com",
+          "Protocol":"email"
+        }],
+        "TopicName": "repository-topic2"
+      }
+    },
+
+    "RepositoryDeadQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 262144,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "repository-dlq",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "RepositoryQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0, 
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "repository-queue",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt": ["RepositoryDeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        }, 
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "RepositoryQueuePolicy": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2008-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": ["SQS:SendMessage"],
+            "Resource": "*"
+          }]
+        },
+        "Queues": [{"Ref" :"RepositoryQueue"}]
+      }
+    }
+  },
+
+  "Outputs": {
+    "RepositoryTopicArn": {
+      "Description": "Repository Topic",
+      "Value": {"Ref": "RepositoryTopic"}
+    },
+
+    "DeadQueueId": {
+      "Description": "Dead Queue",
+      "Value": {"Ref": "RepositoryDeadQueue"}
+    },
+
+    "RepositoryQueueId": {
+      "Description": "Repository Queue",
+      "Value": {"Ref": "RepositoryQueue"}
+    },
+
+    "RepositoryQueueArn": {
+      "Description": "Repository Queue",
+      "Value": {"Fn::GetAtt":["RepositoryQueue", "Arn"]}
+    }
+  }
+}

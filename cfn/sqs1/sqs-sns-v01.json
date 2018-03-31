@@ -1,0 +1,85 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"sqs-sns-v01.son",
+
+  "Resources": {
+    "VocalAlarmTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "DisplayName": "vocal-alarm-topic",
+        "Subscription": [{
+          "Endpoint": "guycole@gmail.com",
+          "Protocol":"email"
+        }],
+        "TopicName": "vocal-alarm"
+      }
+    },
+
+    "VocalDeadQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0,
+        "MaximumMessageSize": 262144,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "vocal-dlq",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "VocalSeagullQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "DelaySeconds": 0, 
+        "MaximumMessageSize": 4096,
+        "MessageRetentionPeriod": 1209600,
+        "QueueName": "vocal-seagull-fresh-file",
+        "ReceiveMessageWaitTimeSeconds": 0,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {"Fn::GetAtt":["VocalDeadQueue", "Arn"]},
+          "maxReceiveCount": 5
+        }, 
+        "VisibilityTimeout": 2
+      }
+    },
+
+    "VocalSeagullQueuePolicy": {
+      "Type": "AWS::SQS::QueuePolicy",
+      "Properties": {
+        "PolicyDocument": {
+          "Version": "2008-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {"AWS": "*"},
+            "Action": ["SQS:SendMessage"],
+            "Resource": "*"
+          }]
+        },
+        "Queues": [{"Ref" : "VocalSeagullQueue"}]
+      }
+    }
+  },
+
+  "Outputs":{
+    "AlarmTopicArn":{
+      "Description":"Alarm Topic",
+      "Value":{"Ref":"VocalAlarmTopic"}
+    },
+
+    "DeadQueueId":{
+      "Description":"Dead Queue",
+      "Value":{"Ref":"VocalDeadQueue"}
+    },
+
+    "VocalSeagullQueueId":{
+      "Description":"Vocal Seagull Queue",
+      "Value":{"Ref": "VocalSeagullQueue"}
+    },
+
+    "VocalSeagullQueueArn":{
+      "Description":"Vocal Seagull Queue",
+      "Value":{"Fn::GetAtt":["VocalSeagullQueue", "Arn"]}
+    }
+  }
+}

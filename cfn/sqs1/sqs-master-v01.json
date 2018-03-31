@@ -1,0 +1,31 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"sqs-master-v01.json",
+
+  "Resources": {
+
+    "SqsSnsStack":{
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/cfn.braingang.net/sqs1/sqs-sns-v01.json",
+        "Tags":[
+          {"Key": "Application", "Value": {"Ref": "AWS::StackName"}}
+        ]
+      }
+    },
+
+    "S3Stack":{
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/cfn.braingang.net/sqs1/sqs-s3-v01.json",
+        "Parameters": {
+          "VocalSeagullQueueArn": {"Fn::GetAtt": ["SqsSnsStack", "Outputs.VocalSeagullQueueArn"]}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    }
+  }
+}

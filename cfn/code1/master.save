@@ -1,0 +1,63 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"code-master-v01.json",
+
+  "Parameters": {
+    "RepositoryName": {
+      "Description": "Repository Name",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "RepositoryName2"
+    },
+
+    "RepositoryDescription": {
+      "Description": "Repository Description",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "Repository Description 2"
+    }
+  },
+
+  "Resources": {
+    "SqsSnsStack":{
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/cfn.braingang.net/code1/code-sqns-v01.json",
+        "Tags":[
+          {"Key": "Application", "Value": {"Ref": "AWS::StackName"}}
+        ]
+      }
+    },
+
+    "GitStack":{
+      "Type":"AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL":"https://s3.amazonaws.com/cfn.braingang.net/code1/code-git-v01.json",
+        "Parameters": {
+          "RepositoryName":{"Ref":"RepositoryName"},
+          "RepositoryDescription":{"Ref":"RepositoryDescription"},
+          "TriggerNotifierArn": {"Fn::GetAtt": ["SqsSnsStack", "Outputs.RepositoryTopicArn"]}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    },
+
+    "Pipeline":{
+      "Type":"AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL":"https://s3.amazonaws.com/cfn.braingang.net/code1/code-piipeline-v01.json",
+        "Parameters": {
+          "RepositoryName":{"Ref":"RepositoryName"},
+          "RepositoryDescription":{"Ref":"RepositoryDescription"},
+          "TriggerNotifierArn": {"Fn::GetAtt": ["SqsSnsStack", "Outputs.RepositoryTopicArn"]}
+        },
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    }
+  }
+}

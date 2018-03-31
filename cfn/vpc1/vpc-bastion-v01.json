@@ -1,0 +1,163 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "vpc-bastion-v01.json",
+
+  "Parameters": {
+    "AlarmTopic": {
+      "Description": "Alarm Topic",
+      "Type": "String",
+      "MinLength": "30"
+    },
+
+    "KeyName": {
+      "Description": "EC2 KeyPair",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "existing EC2 KeyPair"
+    },
+
+    "ImageId": {
+      "Description": "Bastion AMI Image Id",
+      "Type": "String",
+      "MinLength": "12",
+      "AllowedPattern": "ami-[a-f0-9]*"
+    },
+
+    "VpcId": {
+      "Description": "Vpc ID",
+      "Type": "String",
+      "MinLength": "12",
+      "AllowedPattern": "vpc-[a-f0-9]*"
+    },
+
+    "PublicAvailZone": {
+      "Description": "Public Availability Zone",
+      "Type": "String",
+      "MinLength": "9"
+    },
+
+    "PublicSubnetId": {
+      "Description": "Public Subnet ID",
+      "Type": "AWS::EC2::Subnet::Id"
+    }
+  },
+
+  "Resources": {
+    "BastionEC2Profile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [{"Ref": "BastionEC2Role"}]
+      }
+    },
+
+    "BastionEC2Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ 
+            "Action": ["sts:AssumeRole"],
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["ec2.amazonaws.com"]
+            }
+          }]
+        },
+        "Path": "/"
+      }
+    },
+
+    "BastionEC2Policy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "BastionEC2Policy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Action": [
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:DescribeLogStreams",
+              "logs:PutLogEvents",
+              "cloudwatch:PutMetricData",
+              "cloudwatch:GetMetricStatistics",
+              "cloudwatch:ListMetrics",
+              "ec2:DescribeTags"
+            ],
+            "Resource": "*"
+          }]
+        },
+        "Roles": [{"Ref":"BastionEC2Role"}]
+      }
+    },
+
+    "BastionSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Bastion Security Group",
+        "VpcId": {"Ref": "VpcId"},
+        "SecurityGroupIngress": [
+          {"IpProtocol": "tcp", "FromPort": "22", "ToPort": "22", "CidrIp": "0.0.0.0/0"}
+        ]
+      }
+    },
+
+    "BastionEC2": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": {"Ref": "PublicAvailZone"},
+        "IamInstanceProfile": {"Ref": "BastionEC2Profile"},
+        "ImageId": {"Ref": "ImageId"},
+        "InstanceType": "t2.micro",
+        "KeyName": {"Ref": "KeyName"},
+        "NetworkInterfaces": [{
+          "GroupSet": [{"Ref": "BastionSecurityGroup"}],
+          "AssociatePublicIpAddress": "true",
+          "DeviceIndex": "0",
+          "DeleteOnTermination": "true",
+          "SubnetId":{"Ref": "PublicSubnetId"}
+        }],
+        "Tags": [
+          {"Key": "Application", "Value": {"Ref": "AWS::StackName"}},
+          {"Key": "Network", "Value": "Public"}
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": ["", [
+              "#!/bin/bash\n",
+              "yum -y update && yum -y upgrade\n"
+            ]]
+          }
+        }
+      }
+    },
+
+    "CpuAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Bastion CPU Alarm",
+        "AlarmActions": [{"Ref": "AlarmTopic"}],
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "3",
+        "Threshold": "90",
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [{
+          "Name": "InstanceId",
+          "Value": {"Ref": "BastionEC2"}
+        }]
+      }
+    }
+  },
+
+  "Outputs": {
+    "Bastion": {
+      "Description": "BastionEC2",
+      "Value": {"Ref": "BastionEC2"}
+    }
+  }
+}

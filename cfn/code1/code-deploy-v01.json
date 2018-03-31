@@ -1,0 +1,73 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"code-deploy-v01.json",
+
+  "Parameters": {
+    "RepositoryName": {
+      "Description": "Repository Name",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "RepositoryName"
+    },
+
+    "RepositoryDescription": {
+      "Description": "Repository Description",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "Repository Description"
+    },
+
+    "TriggerNotifierArn": {
+      "Description": "Trigger SNS ARN",
+      "Type": "String",
+      "MinLength": "5"
+    }
+  },
+
+  "Resources": {
+    "Application": {
+      "Type": "AWS::CodeDeploy::Application",
+      "Properties": {
+        "ApplicationName": {"Ref": "RepositoryName"},
+        "ComputePlatform": {"Ref": "EC2"},
+      }
+    },
+
+    "Deployment": {
+      "Type": "AWS::CodeDeploy::DeploymentConfig",
+      "Properties": {
+        "DeploymentConfigName": {"Ref": "RepositoryName"},
+        "MinimumHealthyHosts": {
+          "Type": "EC2",
+          "Value": "1"
+        }
+      }
+    },
+
+    "DeploymentGroup": {
+      "Type": "AWS::CodeDeploy::DeploymentGroup",
+      "Properties": {
+        "ApplicationName": {"Ref": "RepositoryName"},
+        "ServiceRoleArn": {"Ref": "RepositoryName"},
+        "Deployment": {
+          "Description": "Description",
+          "IgnoreApplicationStopFailures": "true",
+          "Revision": {
+            "RevisionType": "GitHub",
+            "GitHubLocation": {
+              xxx
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "Outputs": {
+    "ApplicationId": {
+      "Description": "ApplicationId",
+      "Value": {"Ref": "Application"}
+    }
+  }
+}

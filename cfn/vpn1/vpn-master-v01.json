@@ -1,0 +1,138 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "vpn-master-v01.json",
+
+  "Parameters": {
+    "UserName": {
+      "Description": "VPN user name",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "255",
+      "AllowedPattern": "[a-zA-Z][a-zA-Z0-9]*",
+      "ConstraintDescription": "must begin w/a letter and contain only alphanumeric",
+      "Default": "guycole"
+    },
+
+    "PassWord": {
+      "Description": "VPN password (minimum 8 characters)",
+      "NoEcho": "true",
+      "Type": "String",
+      "MinLength": "6",
+      "MaxLength": "255",
+      "ConstraintDescription": "minimum six characters",
+      "Default": "ooRR99"
+    },
+
+    "PassPhrase": {
+      "Description": "VPN passphrase for IPSEC PSK (minimum 8 characters)",
+      "NoEcho": "true",
+      "Type": "String",
+      "MinLength": "6",
+      "MaxLength": "255",
+      "ConstraintDescription": "minimum six characters",
+      "Default": "ppRR88"
+    },
+
+    "Speed": {
+      "Description": "VPN network speed",
+      "Type": "String",
+      "Default": "Standard.VPN-Free",
+      "AllowedValues": [
+        "Standard.VPN-Free",
+        "High.Speed.VPN-Paid",
+        "Ultra.High.Speed.VPN-Paid"
+      ]
+    },
+
+    "AlarmTopic": {
+      "Description": "Alarm Topic",
+      "Type": "String",
+      "MinLength": "30",
+      "Default": "arn:aws:sns:us-west-2:238461155224:alert-topic"
+    },
+
+    "PublicAvailZone": {
+      "Description": "Public Availability Zone",
+      "Type": "String",
+      "MinLength": "9",
+      "Default": "us-west-2c"
+    },
+
+    "VpnImageId": {
+      "Description": "VPN AMI Image Id",
+      "Type": "String",
+      "MinLength": "12",
+      "Default": "ami-0114eb1824f6b87ad",
+      "AllowedPattern": "ami-[a-f0-9]*"
+    },
+
+    "VpnKeyName": {
+      "Description": "VPN EC2 KeyPair",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "Default": "vpn-ore",
+      "ConstraintDescription": "existing EC2 KeyPair"
+    }
+  },
+
+  "Resources": {
+    "VpcStack": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/cfn.braingang.net/vpn1/vpn-vpc-v01.json",
+        "Parameters": {
+          "PublicAvailZone": {"Ref":"PublicAvailZone"}
+        },
+        "Tags": [
+          {"Key": "Application", "Value":{"Ref":"AWS::StackName"}}
+        ]
+      }
+    },
+
+    "Ec2Stack1": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/cfn.braingang.net/vpn1/vpn-ec2-v01.json",
+        "Parameters": {
+          "AlarmTopic": {"Ref": "AlarmTopic"},
+          "KeyName": {"Ref": "VpnKeyName"},
+          "ImageId": {"Ref": "VpnImageId"},
+          "VpcId": {"Fn::GetAtt": ["VpcStack", "Outputs.VpcId"]},
+          "PublicAvailZone": {"Ref": "PublicAvailZone"},
+          "PublicSubnetId": {"Fn::GetAtt": ["VpcStack", "Outputs.PublicSubnetId"]},
+          "Speed": {"Ref": "Speed"},
+          "UserName": {"Ref": "UserName"},
+          "PassWord": {"Ref": "PassWord"},
+          "PassPhrase": {"Ref": "PassPhrase"}
+        },
+        "Tags": [
+          {"Key": "Application", "Value":{"Ref":"AWS::StackName"}},
+          {"Key": "VPN", "Value":"VPN1"}
+        ]
+      }
+    },
+
+    "Ec2Stack2": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3.amazonaws.com/cfn.braingang.net/vpn1/vpn-ec2-v01.json",
+        "Parameters": {
+          "AlarmTopic": {"Ref": "AlarmTopic"},
+          "KeyName": {"Ref": "VpnKeyName"},
+          "ImageId": {"Ref": "VpnImageId"},
+          "VpcId": {"Fn::GetAtt": ["VpcStack", "Outputs.VpcId"]},
+          "PublicAvailZone": {"Ref": "PublicAvailZone"},
+          "PublicSubnetId": {"Fn::GetAtt": ["VpcStack", "Outputs.PublicSubnetId"]},
+          "Speed": {"Ref": "Speed"},
+          "UserName": {"Ref": "UserName"},
+          "PassWord": {"Ref": "PassWord"},
+          "PassPhrase": {"Ref": "PassPhrase"}
+        },
+        "Tags": [
+          {"Key": "Application", "Value":{"Ref":"AWS::StackName"}},
+          {"Key": "VPN", "Value":"VPN2"}
+        ]
+      }
+    }
+  }
+}

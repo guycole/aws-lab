@@ -1,0 +1,149 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description": "vpc-database-v01.json",
+
+  "Parameters": {
+    "AlarmTopic": {
+      "Description": "Alarm Topic",
+      "Type": "String",
+      "MinLength": "30"
+    },
+
+    "KeyName": {
+      "Description": "EC2 KeyPair",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "existing EC2 KeyPair"
+    },
+
+    "ImageId": {
+      "Description": "Bastion AMI Image Id",
+      "Type": "String",
+      "MinLength": "12",
+      "AllowedPattern": "ami-[a-f0-9]*"
+    },
+
+    "VpcId": {
+      "Description": "Vpc ID",
+      "Type": "String",
+      "MinLength": "12",
+      "AllowedPattern": "vpc-[a-f0-9]*"
+    },
+
+    "PrivateAvailZone": {
+      "Description": "Private Availability Zone",
+      "Type": "String",
+      "MinLength": "9"
+    },
+
+    "PrivateSubnetId": {
+      "Description": "Private Subnet ID",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+
+    "PublicCIDR": {
+      "Description": "Public CIDR",
+      "Type": "String",
+      "MinLength": "7"
+    }
+  },
+
+  "Resources": {
+    "DataBaseEC2Profile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [{"Ref": "DataBaseEC2Role"}]
+      }
+    },
+
+    "DataBaseEC2Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{ 
+            "Action": ["sts:AssumeRole"],
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["ec2.amazonaws.com"]
+            }f
+          }]
+        },
+        "Path": "/"
+      }
+    },
+
+    "DataBaseEC2Policy": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "DataBaseEC2Policy",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Action":["s3:*", "ses:*", "sns:*", "sqs:*", "cloudwatch:*", "codecommit:*", "logs:*"],
+            "Resource": "*"
+          }]
+        },
+        "Roles": [{"Ref": "DataBaseEC2Role"}]
+      }
+    },
+
+    "DataBaseSecurityGroup":{
+      "Type":"AWS::EC2::SecurityGroup",
+      "Properties":{
+        "GroupDescription":"DataBase Security Group",
+        "VpcId":{"Ref":"VpcId"},
+        "SecurityGroupIngress":[
+          {"IpProtocol":"tcp", "FromPort":"22", "ToPort":"22", "CidrIp":{"Ref":"PublicCIDR"}}, 
+          {"IpProtocol":"tcp", "FromPort":"3306", "ToPort":"3306", "CidrIp":{"Ref":"PublicCIDR"}}, 
+          {"IpProtocol":"tcp", "FromPort":"443", "ToPort":"443", "CidrIp":{"Ref":"PublicCIDR"}}, 
+          {"IpProtocol":"tcp", "FromPort":"80", "ToPort":"80", "CidrIp":{"Ref":"PublicCIDR"}}
+        ]
+      }
+    },
+
+    "DataBaseEC2": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "AvailabilityZone": {"Ref": "PrivateAvailZone"},
+        "IamInstanceProfile": {"Ref": "DataBaseEC2Profile"},
+        "ImageId": {"Ref": "ImageId"},
+        "InstanceType": "m5.large",
+        "KeyName": {"Ref": "KeyName"},
+        "BlockDeviceMappings": [
+          {"DeviceName": "/dev/sdj", "Ebs": {"VolumeSize": "333", "VolumeType": "gp2"}},
+          {"DeviceName": "/dev/sdk", "Ebs": {"VolumeSize": "333", "VolumeType": "gp2"}}
+        ],
+        "NetworkInterfaces":[{
+          "GroupSet":[{"Ref":"DataBaseSecurityGroup"}],
+          "AssociatePublicIpAddress":"false",
+          "DeviceIndex":"0",
+          "DeleteOnTermination":"true",
+          "SubnetId":{"Ref":"PrivateSubnetId"}
+        }],
+        "Tags":[
+          {"Key":"Application", "Value":{"Ref":"AWS::StackName"}},
+          {"Key":"Network", "Value":"Private"},
+          {"Key":"Server", "Value":"DataBase"}
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": ["", [
+              "#!/bin/bash\n",
+              "yum -y update && yum -y upgrade\n"
+            ]]
+          }
+        }
+      }
+    }
+  },
+
+  "Outputs":{
+    "DataBase":{
+      "Description":"DataBaseEC2",
+      "Value":{"Ref":"DataBaseEC2"}
+    }
+  }
+}

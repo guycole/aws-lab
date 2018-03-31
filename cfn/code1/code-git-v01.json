@@ -1,0 +1,57 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+
+  "Description":"code-git-v01.json",
+
+  "Parameters": {
+    "RepositoryName": {
+      "Description": "Repository Name",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "RepositoryName"
+    },
+
+    "RepositoryDescription": {
+      "Description": "Repository Description",
+      "Type": "String",
+      "MinLength": "5",
+      "Default": "Repository Description"
+    },
+
+    "TriggerNotifierArn": {
+      "Description": "Trigger SNS ARN",
+      "Type": "String",
+      "MinLength": "30",
+      "AllowedPattern": "^arn:aws:sns:"
+    }
+  },
+
+  "Resources": {
+    "Repository": {
+      "Type": "AWS::CodeCommit::Repository",
+      "Properties": {
+        "RepositoryDescription": {"Ref": "RepositoryDescription"},
+        "RepositoryName": {"Ref": "RepositoryName"},
+        "Triggers": [{
+          "Name": "MasterTrigger",
+          "CustomData": "Custom Project",
+          "DestinationArn": {"Ref": "TriggerNotifierArn"},
+          "Branches": ["Master"],
+          "Events": ["all"]
+        }]
+      }
+    }
+  },
+
+  "Outputs": {
+    "RepositoryId": {
+      "Description": "Fresh Repository",
+      "Value": {"Ref": "Repository"}
+    },
+
+    "RepositoryArn": {
+      "Description": "Fresh Repository",
+      "Value": {"Fn::GetAtt": ["Repository", "Arn"]}
+    }
+  }
+}
